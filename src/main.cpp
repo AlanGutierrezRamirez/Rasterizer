@@ -32,8 +32,43 @@ void drawLine(SDL_Surface* surface, int x0, int y0, int x1, int y1, Uint32 color
     }
 }
 
+struct Vertex
+{
+    int x, y;
+};
+
+void orderVertices(Vertex &top, Vertex &mid, Vertex &bot)
+{
+    if (top.y > mid.y) std::swap(top, mid);
+    if (top.y > bot.y) std::swap(top, bot);
+    if (mid.y > bot.y) std::swap(mid, bot);
+}
+
+int interpolateX(Vertex v_one, Vertex v_two, int i)
+{
+    return v_one.x + (i - v_one.y) * (v_two.x - v_one.x) / (v_two.y - v_one.y);
+}
+
+void fillTriangle(SDL_Surface *surface, Vertex v_one, Vertex v_two, Vertex v_three, Uint32 color)
+{
+    orderVertices(v_one, v_two, v_three);
+
+    for(int i = v_one.y; i<v_two.y; i++)
+    {
+        int x = interpolateX(v_one, v_three, i);
+        int x1 = interpolateX(v_one, v_two, i); 
+        drawLine(surface, x, i, x1, i, color);
+    }
+    for(int i=v_two.y; i<v_three.y; i++)
+    {
+        int x = interpolateX(v_one, v_three, i);
+        int x1 = interpolateX(v_two, v_three, i); 
+        drawLine(surface, x, i, x1, i, color);
+    }
+}
+
 int main() {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         std::cerr << "Error al iniciar SDL3: " << SDL_GetError() << std::endl;
         return 1;
     }
@@ -65,9 +100,11 @@ int main() {
 
         SDL_FillSurfaceRect(surface, nullptr, SDL_MapSurfaceRGB(surface, 15, 15, 35));
 
-        drawLine(surface, 400, 150, 200, 450, cyan);  // punta → izquierda
-        drawLine(surface, 200, 450, 600, 450, cyan);  // izquierda → derecha
-        drawLine(surface, 600, 450, 400, 150, cyan);  // derecha → punta
+        Vertex one = {400, 150};
+        Vertex two = {200, 450};
+        Vertex three = {600, 450};
+
+        fillTriangle(surface, one, two, three, cyan);
 
         SDL_UpdateWindowSurface(window);
 
