@@ -1,6 +1,12 @@
 #include <SDL3/SDL.h>
 #include <iostream>
 
+#define WIDTH 800
+#define HEIGHT 600
+#define SCALE 2
+#define HALF_WIDTH 400
+#define HALF_HEIGHT 300
+
 void putPixel(SDL_Surface* surface, int x, int y, Uint32 color) {
     if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) return;
 
@@ -67,6 +73,17 @@ void fillTriangle(SDL_Surface *surface, Vertex v_one, Vertex v_two, Vertex v_thr
     }
 }
 
+struct Point3D
+{
+    float x, y, z;
+};
+
+Vertex projectPoint(Point3D vertice)
+{
+    return {(int)(vertice.x/vertice.z) * SCALE + HALF_WIDTH, (int)(vertice.y/vertice.z) * SCALE + HALF_HEIGHT};
+}
+
+
 int main() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         std::cerr << "Error al iniciar SDL3: " << SDL_GetError() << std::endl;
@@ -100,11 +117,38 @@ int main() {
 
         SDL_FillSurfaceRect(surface, nullptr, SDL_MapSurfaceRGB(surface, 15, 15, 35));
 
-        Vertex one = {400, 150};
-        Vertex two = {200, 450};
-        Vertex three = {600, 450};
+        Point3D top_left_back = { -100, 100, 15 };
+        Point3D top_right_back = { 100, 100, 15 };
+        Point3D top_left_front = { -100, 100, 8 };
+        Point3D top_right_front = { 100, 100, 8 };
+        Point3D bottom_left_back = { -100, -100, 15 };
+        Point3D bottom_right_back = { 100, -100, 15 };
+        Point3D bottom_left_front = {-100, -100, 8};
+        Point3D bottom_right_front = {100, -100, 8};
 
-        fillTriangle(surface, one, two, three, cyan);
+        Vertex tlb = projectPoint(top_left_back);
+        Vertex trb = projectPoint(top_right_back);
+        Vertex tlf = projectPoint(top_left_front);
+        Vertex trf = projectPoint(top_right_front);
+        Vertex blb = projectPoint(bottom_left_back);
+        Vertex brb = projectPoint(bottom_right_back);
+        Vertex blf = projectPoint(bottom_left_front);
+        Vertex brf = projectPoint(bottom_right_front);
+
+
+        drawLine(surface, tlb.x, tlb.y, trb.x, trb.y, cyan);
+        drawLine(surface, trb.x, trb.y, trf.x, trf.y, cyan);
+        drawLine(surface, tlb.x, tlb.y, tlf.x, tlf.y, cyan);
+        drawLine(surface, tlf.x, tlf.y, trf.x, trf.y, cyan);
+        drawLine(surface, tlb.x, tlb.y, blb.x, blb.y, cyan);
+        drawLine(surface, trb.x, trb.y, brb.x, brb.y, cyan);
+        drawLine(surface, tlf.x, tlf.y, blf.x, blf.y, cyan);
+        drawLine(surface, trf.x, trf.y, brf.x, brf.y, cyan);
+        drawLine(surface, blb.x, blb.y, brb.x, brb.y, cyan);
+        drawLine(surface, blb.x, blb.y, blf.x, blf.y, cyan);
+        drawLine(surface, brb.x, brb.y, brf.x, brf.y, cyan);
+        drawLine(surface, blf.x, blf.y, brf.x, brf.y, cyan);
+
 
         SDL_UpdateWindowSurface(window);
 
