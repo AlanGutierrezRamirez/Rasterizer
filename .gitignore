@@ -1,0 +1,14 @@
+# Ejecutable
+Rasterizer
+
+# Archivos de objeto
+*.o
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Debug symbols
+*.dSYM
