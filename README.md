@@ -15,7 +15,7 @@ A rasterizer is the process that takes a 3D object defined by vertices and conve
 ## Pipeline stages (work in progress)
 
 - [x] Window creation with SDL3
-- [ ] Triangle drawing
+- [x] Triangle drawing
 - [ ] Vertex transformation (model, view, projection matrices)
 - [ ] Perspective divide
 - [ ] Backface culling
