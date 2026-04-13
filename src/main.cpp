@@ -39,9 +39,15 @@ void drawLine(SDL_Surface* surface, int x0, int y0, int x1, int y1, Uint32 color
     }
 }
 
+struct Point3D
+{
+    float x, y, z;
+};
+
 struct Vertex
 {
     int x, y;
+    Point3D normal;
 };
 
 void orderVertices(Vertex &top, Vertex &mid, Vertex &bot)
@@ -54,6 +60,12 @@ void orderVertices(Vertex &top, Vertex &mid, Vertex &bot)
 int interpolateX(Vertex v_one, Vertex v_two, int i)
 {
     return v_one.x + (i - v_one.y) * (v_two.x - v_one.x) / (v_two.y - v_one.y);
+}
+
+float interpolate(float start, float end, int y, int y_start, int y_end)
+{
+    if (y_start == y_end) return start;
+    return start + (float)(y - y_start) * (end - start) / (float)(y_end - y_start);
 }
 
 void fillTriangle(SDL_Surface *surface, Vertex v_one, Vertex v_two, Vertex v_three, Uint32 color)
@@ -74,9 +86,9 @@ void fillTriangle(SDL_Surface *surface, Vertex v_one, Vertex v_two, Vertex v_thr
     }
 }
 
-struct Point3D
+struct Color
 {
-    float x, y, z;
+    int r, g, b;
 };
 
 Vertex projectPoint(Point3D vertice)
@@ -86,6 +98,7 @@ Vertex projectPoint(Point3D vertice)
         (int)(vertice.y / vertice.z * SCALE) + HALF_HEIGHT
     };
 }
+
 Point3D rotateX(Point3D point, float angle)
 {
 
@@ -151,6 +164,141 @@ float dotProduct(Point3D v1, Point3D v2)
     
 }
 
+Point3D normalize(Point3D v)
+{
+    float length = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    return {v.x/length, v.y/length, v.z/length};
+}
+
+Uint32 addBrightness(SDL_Surface *surface, int r, int g, int b, float brightness)
+{
+    return SDL_MapSurfaceRGB(surface, r * brightness, g * brightness, b * brightness);
+}
+
+void fillTrianglePhong(SDL_Surface *surface, Vertex v_one, Vertex v_two, Vertex v_three, Point3D light, Color color)
+{
+    orderVertices(v_one, v_two, v_three);
+
+    for(int i = v_one.y; i<v_two.y; i++)
+    {
+        float xL = interpolate(v_one.x, v_two.x, i, v_one.y, v_two.y);
+        float nxL = interpolate(v_one.normal.x, v_two.normal.x, i, v_one.y, v_two.y);
+        float nyL = interpolate(v_one.normal.y, v_two.normal.y, i, v_one.y, v_two.y);
+        float nzL = interpolate(v_one.normal.z, v_two.normal.z, i, v_one.y, v_two.y);
+
+        float xR = interpolate(v_one.x, v_three.x, i, v_one.y, v_three.y);
+        float nxR = interpolate(v_one.normal.x, v_three.normal.x, i, v_one.y, v_three.y);
+        float nyR = interpolate(v_one.normal.y, v_three.normal.y, i, v_one.y, v_three.y);
+        float nzR = interpolate(v_one.normal.z, v_three.normal.z, i, v_one.y, v_three.y);
+
+        int left = std::min(xL, xR);
+        int right = std::max(xL, xR);
+
+        for(int j = left; j < right; j++)
+        {
+
+            float nx = interpolate(nxL, nxR, j, left, right);
+            float ny = interpolate(nyL, nyR, j, left, right);
+            float nz = interpolate(nzL, nzR, j, left, right);
+
+            Point3D normal = {nx, ny, nz};
+
+            normal = normalize(normal);
+
+            float dot = dotProduct(normal, light);
+
+            Uint32 bright_cyan = addBrightness(surface, color.r, color.g, color.b, std::max(0.0f, dot));
+
+            putPixel(surface, j, i, bright_cyan);
+    
+        }
+    }
+
+    for(int i=v_two.y; i<v_three.y; i++)
+    {
+        float xL = interpolate(v_one.x, v_three.x, i, v_one.y, v_three.y);
+        float nxL = interpolate(v_one.normal.x, v_three.normal.x, i, v_one.y, v_three.y);
+        float nyL = interpolate(v_one.normal.y, v_three.normal.y, i, v_one.y, v_three.y);
+        float nzL = interpolate(v_one.normal.z, v_three.normal.z, i, v_one.y, v_three.y);
+
+        float xR = interpolate(v_two.x, v_three.x, i, v_two.y, v_three.y);
+        float nxR = interpolate(v_two.normal.x, v_three.normal.x, i, v_two.y, v_three.y);
+        float nyR = interpolate(v_two.normal.y, v_three.normal.y, i, v_two.y, v_three.y);
+        float nzR = interpolate(v_two.normal.z, v_three.normal.z, i, v_two.y, v_three.y);
+
+        int left = std::min(xL, xR);
+        int right = std::max(xL, xR);
+
+        for(int j = left; j < right; j++)
+        {
+
+            float nx = interpolate(nxL, nxR, j, left, right);
+            float ny = interpolate(nyL, nyR, j, left, right);
+            float nz = interpolate(nzL, nzR, j, left, right);
+
+            Point3D normal = {nx, ny, nz};
+
+            normal = normalize(normal);
+
+            float dot = dotProduct(normal, light);
+
+            Uint32 bright_cyan = addBrightness(surface, color.r, color.g, color.b, std::max(0.0f, dot));
+
+            putPixel(surface, j, i, bright_cyan);
+    
+        }
+    }
+
+}
+
+const int latitud = 32;
+const int longitud = 64;
+const int total_points = (latitud + 1) * longitud;
+const int total_faces = (latitud - 1) * longitud;
+
+Point3D  sphere[total_points];
+
+struct Triangle{
+    int a, b, c;
+};
+
+Triangle sphere_triangles[total_faces * 2];
+
+void Sphere(int r)
+{
+    int cur = 0;
+    for(int i=0; i<=latitud; i++)
+    {
+        float theta = (float)i / latitud * M_PI;
+        for(int j=0; j<longitud; j++)
+        {
+            float phi = (float)j / longitud * 2 * M_PI;
+            float x = r * sin(theta) * cos(phi);
+            float y = r * cos(theta);
+            float z = r * sin(theta) * sin(phi);
+            sphere[i * longitud + j] = {x, y, z + 5.0f};
+        }
+    }
+
+    int tri = 0;
+    for(int i = 0; i < latitud; i++)
+    {
+        for(int j = 0; j < longitud; j++)
+        {
+
+            int current = i * longitud + j;
+            int right = i * longitud + (j + 1) % longitud;
+            int bottom = (i + 1) * longitud + j;
+            int bottom_right = (i + 1) * longitud + (j + 1) % longitud;
+
+            sphere_triangles[tri++] = {current, right, bottom};
+            sphere_triangles[tri++] = {right, bottom_right, bottom};
+        }
+    }
+
+
+}
+
 int main() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         std::cerr << "Error al iniciar SDL3: " << SDL_GetError() << std::endl;
@@ -170,48 +318,25 @@ int main() {
 
     SDL_Surface* surface = SDL_GetWindowSurface(window);
 
-    bool running = true;
-
     SDL_Event event;
 
-    Uint32 cyan = SDL_MapSurfaceRGB(surface, 0, 255, 200);
+    Point3D light = {-1, 0, 0};
 
-    Point3D cube_vertices[8] = 
-    {
-        { -1,  1,  1 }, 
-        {  1,  1,  1 }, 
-        { -1,  1, -1 },
-        {  1,  1, -1 },
-        { -1, -1,  1 },
-        {  1, -1,  1 },
-        { -1, -1, -1 },
-        {  1, -1, -1 }
-    };
+    Color cyan_color = {0, 255, 200};
 
-    Edge edges[12] = 
-    {
-        {0, 1}, {0, 2}, {0, 4}, 
-        {1, 3}, {2, 3}, {1, 5},
-        {4, 5}, {5, 7}, {4, 6}, 
-        {6, 7}, {6, 2}, {7, 3},
-    };
+    int radius = 2;
 
-    Point3D new_vertices[8];
+    Sphere(radius);
 
-    float angleX = 0.01;
-    float angleY = 0.05;
-    float angleZ = 0.005;
+    float deltaTime = 0;
+    Uint64 currentTime = 0;
+    Uint64 previousTime = SDL_GetPerformanceCounter();
+    float frequency = SDL_GetPerformanceFrequency();
+    
+    float update = 0.5f;
+    float accumulator = 0;
 
-    Face faces[6] = 
-    {
-        {0, 4, 5, 1},  // frente  (z=1)
-        {3, 7, 6, 2},  // atrás   (z=-1)
-        {0, 1, 3, 2},  // arriba  (y=1)
-        {4, 6, 7, 5},  // abajo   (y=-1)
-        {0, 2, 6, 4},  // izquierda (x=-1)
-        {1, 5, 7, 3},  // derecha (x=1)
-    };
-
+    bool running = true;
 
     while (running) {
         while (SDL_PollEvent(&event)) {
@@ -220,49 +345,46 @@ int main() {
             }
         }
 
+        currentTime = SDL_GetPerformanceCounter();
+        deltaTime = (currentTime - previousTime) / frequency;
+        float fps = 1.0/deltaTime;
+        previousTime = currentTime;
+
+
+        accumulator += deltaTime;
+        if(accumulator > update)
+        {
+            std::string title = "Rasterizer: " + std::to_string(fps) + " FPS";
+            SDL_SetWindowTitle(window, title.c_str());
+            accumulator = 0;
+        }
+
         SDL_FillSurfaceRect(surface, nullptr, SDL_MapSurfaceRGB(surface, 15, 15, 35));
 
-        angleX += 0.01;
-        angleY += 0.05;
-        angleZ += 0.005;
 
-        int i = 0;
-        for(Point3D point : cube_vertices)
+        for(Triangle triangle : sphere_triangles)
         {
-            Point3D new_point = rotateX(point, angleX);
-            new_point = rotateY(new_point, angleY);
-            new_point = rotateZ(new_point, angleZ);
-            new_point.z += 3;
 
-            new_vertices[i] = new_point;
-            i++;
+            Point3D a = sphere[triangle.a];
+            Point3D b = sphere[triangle.b];
+            Point3D c = sphere[triangle.c];
+
+            Point3D v1 = {b.x - a.x, b.y - a.y, b.z - a.z};
+            Point3D v2 = {c.x - a.x, c.y - a.y, c.z - a.z};
+            Point3D faceNormal = crossProduct(v1, v2);
+
+            if (faceNormal.z < 0) continue;
+
+            Vertex one = projectPoint(a);
+            Vertex two = projectPoint(b);
+            Vertex three = projectPoint(c);
+
+            one.normal = {a.x, a.y, a.z - 5.0f};
+            two.normal = {b.x, b.y, b.z - 5.0f};
+            three.normal = {c.x, c.y, c.z - 5.0f};
+
+            fillTrianglePhong(surface, one, two, three, light, cyan_color);
         }
-
-        for(Face face : faces)
-        {
-            Point3D a = new_vertices[face.a];
-            Point3D b = new_vertices[face.b];
-            Point3D c = new_vertices[face.c];
-            Point3D d = new_vertices[face.d];
-
-            Point3D v1 = { b.x - a.x, b.y - a.y, b.z - a.z };
-            Point3D v2 = { c.x - a.x, c.y - a.y, c.z - a.z };
-
-            Point3D normal = crossProduct(v1, v2);
-
-            if(normal.z < 0)
-            {
-
-                Vertex one = projectPoint(a);
-                Vertex two = projectPoint(b);
-                Vertex three = projectPoint(c);
-                Vertex four = projectPoint(d);
-                fillTriangle(surface, one, two, three, cyan);
-                fillTriangle(surface, one, three, four, cyan);
-            }
-
-        }
-
 
         SDL_UpdateWindowSurface(window);
 
