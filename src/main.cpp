@@ -1,9 +1,10 @@
 #include <SDL3/SDL.h>
 #include <iostream>
+#include <cmath>
 
 #define WIDTH 800
 #define HEIGHT 600
-#define SCALE 2
+#define SCALE 200
 #define HALF_WIDTH 400
 #define HALF_HEIGHT 300
 
@@ -80,9 +81,75 @@ struct Point3D
 
 Vertex projectPoint(Point3D vertice)
 {
-    return {(int)(vertice.x/vertice.z) * SCALE + HALF_WIDTH, (int)(vertice.y/vertice.z) * SCALE + HALF_HEIGHT};
+    return {
+        (int)(vertice.x / vertice.z * SCALE) + HALF_WIDTH,
+        (int)(vertice.y / vertice.z * SCALE) + HALF_HEIGHT
+    };
+}
+Point3D rotateX(Point3D point, float angle)
+{
+
+    Point3D newPoint;
+
+    newPoint.x = point.x;
+    newPoint.y = point.y * cos(angle) - point.z * sin(angle);
+    newPoint.z = point.y * sin(angle) + point.z * cos(angle);
+
+    return newPoint;
+
 }
 
+Point3D rotateY(Point3D point, float angle)
+{
+
+    Point3D newPoint;
+
+    newPoint.x = point.x * cos(angle) - point.z * sin(angle);
+    newPoint.y = point.y;
+    newPoint.z = point.x * sin(angle) + point.z * cos(angle);
+
+    return newPoint;
+
+}
+
+Point3D rotateZ(Point3D point, float angle)
+{
+
+    Point3D newPoint;
+
+    newPoint.x = point.x * cos(angle) - point.y * sin(angle);
+    newPoint.y = point.x * sin(angle) + point.y * cos(angle);
+    newPoint.z = point.z;
+
+    return newPoint;
+
+}
+
+struct Edge {
+    int start, end;
+};
+
+struct Face {
+    int a, b, c, d;
+};
+
+
+Point3D crossProduct(Point3D v1, Point3D v2)
+{
+    Point3D cross;
+    cross.x = v1.y * v2.z - v1.z * v2.y;
+    cross.y = v1.z * v2.x - v1.x * v2.z;
+    cross.z = v1.x * v2.y - v1.y * v2.x;
+
+    return cross;
+}
+
+float dotProduct(Point3D v1, Point3D v2)
+{
+
+    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    
+}
 
 int main() {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -92,7 +159,7 @@ int main() {
 
     SDL_Window* window = SDL_CreateWindow(
         "Rasterizer",
-        800, 600,
+        WIDTH, HEIGHT,
         SDL_WINDOW_RESIZABLE
     );
 
@@ -104,9 +171,47 @@ int main() {
     SDL_Surface* surface = SDL_GetWindowSurface(window);
 
     bool running = true;
+
     SDL_Event event;
 
     Uint32 cyan = SDL_MapSurfaceRGB(surface, 0, 255, 200);
+
+    Point3D cube_vertices[8] = 
+    {
+        { -1,  1,  1 }, 
+        {  1,  1,  1 }, 
+        { -1,  1, -1 },
+        {  1,  1, -1 },
+        { -1, -1,  1 },
+        {  1, -1,  1 },
+        { -1, -1, -1 },
+        {  1, -1, -1 }
+    };
+
+    Edge edges[12] = 
+    {
+        {0, 1}, {0, 2}, {0, 4}, 
+        {1, 3}, {2, 3}, {1, 5},
+        {4, 5}, {5, 7}, {4, 6}, 
+        {6, 7}, {6, 2}, {7, 3},
+    };
+
+    Point3D new_vertices[8];
+
+    float angleX = 0.01;
+    float angleY = 0.05;
+    float angleZ = 0.005;
+
+    Face faces[6] = 
+    {
+        {0, 4, 5, 1},  // frente  (z=1)
+        {3, 7, 6, 2},  // atrás   (z=-1)
+        {0, 1, 3, 2},  // arriba  (y=1)
+        {4, 6, 7, 5},  // abajo   (y=-1)
+        {0, 2, 6, 4},  // izquierda (x=-1)
+        {1, 5, 7, 3},  // derecha (x=1)
+    };
+
 
     while (running) {
         while (SDL_PollEvent(&event)) {
@@ -117,37 +222,46 @@ int main() {
 
         SDL_FillSurfaceRect(surface, nullptr, SDL_MapSurfaceRGB(surface, 15, 15, 35));
 
-        Point3D top_left_back = { -100, 100, 15 };
-        Point3D top_right_back = { 100, 100, 15 };
-        Point3D top_left_front = { -100, 100, 8 };
-        Point3D top_right_front = { 100, 100, 8 };
-        Point3D bottom_left_back = { -100, -100, 15 };
-        Point3D bottom_right_back = { 100, -100, 15 };
-        Point3D bottom_left_front = {-100, -100, 8};
-        Point3D bottom_right_front = {100, -100, 8};
+        angleX += 0.01;
+        angleY += 0.05;
+        angleZ += 0.005;
 
-        Vertex tlb = projectPoint(top_left_back);
-        Vertex trb = projectPoint(top_right_back);
-        Vertex tlf = projectPoint(top_left_front);
-        Vertex trf = projectPoint(top_right_front);
-        Vertex blb = projectPoint(bottom_left_back);
-        Vertex brb = projectPoint(bottom_right_back);
-        Vertex blf = projectPoint(bottom_left_front);
-        Vertex brf = projectPoint(bottom_right_front);
+        int i = 0;
+        for(Point3D point : cube_vertices)
+        {
+            Point3D new_point = rotateX(point, angleX);
+            new_point = rotateY(new_point, angleY);
+            new_point = rotateZ(new_point, angleZ);
+            new_point.z += 3;
 
+            new_vertices[i] = new_point;
+            i++;
+        }
 
-        drawLine(surface, tlb.x, tlb.y, trb.x, trb.y, cyan);
-        drawLine(surface, trb.x, trb.y, trf.x, trf.y, cyan);
-        drawLine(surface, tlb.x, tlb.y, tlf.x, tlf.y, cyan);
-        drawLine(surface, tlf.x, tlf.y, trf.x, trf.y, cyan);
-        drawLine(surface, tlb.x, tlb.y, blb.x, blb.y, cyan);
-        drawLine(surface, trb.x, trb.y, brb.x, brb.y, cyan);
-        drawLine(surface, tlf.x, tlf.y, blf.x, blf.y, cyan);
-        drawLine(surface, trf.x, trf.y, brf.x, brf.y, cyan);
-        drawLine(surface, blb.x, blb.y, brb.x, brb.y, cyan);
-        drawLine(surface, blb.x, blb.y, blf.x, blf.y, cyan);
-        drawLine(surface, brb.x, brb.y, brf.x, brf.y, cyan);
-        drawLine(surface, blf.x, blf.y, brf.x, brf.y, cyan);
+        for(Face face : faces)
+        {
+            Point3D a = new_vertices[face.a];
+            Point3D b = new_vertices[face.b];
+            Point3D c = new_vertices[face.c];
+            Point3D d = new_vertices[face.d];
+
+            Point3D v1 = { b.x - a.x, b.y - a.y, b.z - a.z };
+            Point3D v2 = { c.x - a.x, c.y - a.y, c.z - a.z };
+
+            Point3D normal = crossProduct(v1, v2);
+
+            if(normal.z < 0)
+            {
+
+                Vertex one = projectPoint(a);
+                Vertex two = projectPoint(b);
+                Vertex three = projectPoint(c);
+                Vertex four = projectPoint(d);
+                fillTriangle(surface, one, two, three, cyan);
+                fillTriangle(surface, one, three, four, cyan);
+            }
+
+        }
 
 
         SDL_UpdateWindowSurface(window);
