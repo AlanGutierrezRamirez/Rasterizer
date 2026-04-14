@@ -15,14 +15,22 @@ A rasterizer is the process that takes a 3D object defined by vertices and conve
 ## Pipeline stages (work in progress)
 
 - [x] Window creation with SDL3
-- [x] Triangle drawing
-- [ ] Vertex transformation (model, view, projection matrices)
-- [ ] Perspective divide
-- [ ] Backface culling
-- [ ] Scanline rasterization
-- [ ] Depth buffer (z-buffer)
+- [x] Triangle drawing (Bresenham line algorithm)
+- [x] Scanline rasterization (filled triangles)
+- [x] Perspective projection (x/z, y/z with scale + screen centering)
+- [x] 3D vertex transformation (rotate X, Y, Z)
+- [x] Backface culling (face normal z-component check)
+- [x] Depth buffer (z-buffer)
+- [x] Mesh definition (vertices + edges + faces)
+- [x] Sphere generation (parametric, latitude/longitude)
+- [x] Phong shading (per-pixel normal interpolation)
+- [x] Vertex normals
+- [x] Delta time / FPS counter
+- [ ] Camera / view matrix
+- [ ] Projection matrix (proper FOV, near/far planes)
 - [ ] Texture mapping
-- [ ] Lighting
+- [ ] Multiple light sources
+- [ ] OBJ file loading
 
 ## Built with
 
