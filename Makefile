@@ -4,17 +4,18 @@ CXX = clang++
 # Flags
 CXXFLAGS = -std=c++17
 FRAMEWORK_PATH = ./dependencies/SDL3.xcframework/macos-arm64_x86_64
-HEADERS_PATH = ./dependencies/SDL3.xcframework/macos-arm64_x86_64/SDL3.framework/Headers
-FRAMEWORKS = -framework SDL3
-RPATH = -Wl,-rpath,@executable_path/dependencies/SDL3.xcframework/macos-arm64_x86_64
+HEADERS_PATH   = ./dependencies/SDL3.xcframework/macos-arm64_x86_64/SDL3.framework/Headers
+FRAMEWORKS     = -framework SDL3
+RPATH          = -Wl,-rpath,@executable_path/dependencies/SDL3.xcframework/macos-arm64_x86_64
 
 # Archivos
-SRC = src/main.cpp
+HEADERS = include
+SRC = src/main.cpp src/engine_math.cpp src/draw.cpp src/zbuffer.cpp src/lights.cpp src/sphere.cpp src/matrix.cpp
 OUT = Rasterizer
 
 # Regla principal
 all:
-	$(CXX) $(CXXFLAGS) -I$(HEADERS_PATH) -F$(FRAMEWORK_PATH) $(FRAMEWORKS) $(RPATH) $(SRC) -o $(OUT)
+	$(CXX) $(CXXFLAGS) -I$(HEADERS_PATH) -I$(HEADERS) -F$(FRAMEWORK_PATH) $(FRAMEWORKS) $(RPATH) $(SRC) -o $(OUT)
 
 # Limpiar ejecutable
 clean:
