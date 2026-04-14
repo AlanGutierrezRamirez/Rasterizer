@@ -4,12 +4,29 @@ A software rasterizer built from scratch in C++ using SDL3 for window and input 
 
 The goal of this project is to implement the full graphics pipeline manually — without OpenGL, Vulkan, or any rendering API. Every stage from 3D vertex to screen pixel is written by hand.
 
+![Rasterizer](media/rasterizer.gif)
+
 ## What is a rasterizer?
 
 A rasterizer is the process that takes a 3D object defined by vertices and converts it into the pixels you see on screen. This is exactly what OpenGL does under the hood. In this project, that entire pipeline is implemented in software:
 
 ```
 3D Vertex → World Space → Camera Space → Clip Space → Screen Space → Pixel
+```
+
+## What is Phong shading?
+
+Phong shading, unlike flat shading, allows for a smoother shading on objects. A flat shading lights a cubes' face entirely the same shade. On a sphere, the faces have a smoother transition, here is where phong shading shines best (pun intended). Since here the shade is calculated per pixel we can say phong is a superior technique. Here, each pixels normal is taken into account in relation to the light source.
+
+```
+    Point3D normal = normalize({
+        interpolate(nxL, nxR, j, left, right),
+        interpolate(nyL, nyR, j, left, right),
+        interpolate(nzL, nzR, j, left, right)
+    });
+
+    float dot = dotProduct(normal, light);
+    putPixel(surface, j, y, addBrightness(surface, color.r, color.g, color.b, std::max(0.05f, dot)));
 ```
 
 ## Pipeline stages (work in progress)
