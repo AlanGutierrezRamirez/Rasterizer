@@ -2,8 +2,8 @@
 #include <iostream>
 #include <string>
 
+#include "vector_3.h"
 #include "config.h"
-#include "engine_math.h"
 #include "lights.h"
 #include "zbuffer.h"
 #include "draw.h"
@@ -45,9 +45,9 @@ int main()
     sphereInsOne.angle = 0.005;
     sphereInsTwo.angle = -0.005;
 
-    light = normalize(light);
+    light.Normalize();
 
-    Point3D camera = {0, 0, -1};
+    Vec3 camera = {0, 0, -1};
 
     float   deltaTime    = 0;
     Uint64  currentTime  = 0;

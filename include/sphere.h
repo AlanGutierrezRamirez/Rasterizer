@@ -1,9 +1,9 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-#include "engine_math.h"
 #include "draw.h"
 #include "lights.h"
+#include "vector_3.h"
 
 struct Triangle
 {
@@ -17,7 +17,7 @@ struct Sphere
     static constexpr int total_points = (latitud + 1) * longitud;
     static constexpr int total_faces  = latitud * longitud;
 
-    Point3D  vertices[total_points];
+    Vec3  vertices[total_points];
     Triangle triangles[total_faces * 2];
 
 };
@@ -32,4 +32,4 @@ struct SphereInstance {
 
 void InitSphere(Sphere& sphere, float r);
 
-void renderSphere(SDL_Surface* surface, SphereInstance &sphere, Point3D cameraDir);
+void renderSphere(SDL_Surface* surface, SphereInstance &sphere, Vec3 cameraDir);

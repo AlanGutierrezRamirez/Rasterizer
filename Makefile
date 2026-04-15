@@ -10,7 +10,10 @@ RPATH          = -Wl,-rpath,@executable_path/dependencies/SDL3.xcframework/macos
 
 # Archivos
 HEADERS = include
-SRC = src/main.cpp src/engine_math.cpp src/draw.cpp src/zbuffer.cpp src/lights.cpp src/sphere.cpp src/matrix.cpp
+SRC = src/main.cpp src/draw.cpp src/zbuffer.cpp src/lights.cpp src/sphere.cpp \
+      src/vector_2.cc src/vector_3.cc src/vector_4.cc \
+      src/matrix_2.cc src/matrix_3.cc src/matrix_4.cc \
+      src/collisions.cc
 OUT = Rasterizer
 
 # Regla principal

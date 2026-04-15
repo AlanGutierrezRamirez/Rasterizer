@@ -2,8 +2,9 @@
 #include "zbuffer.h"
 #include <algorithm>
 #include <cmath>
+#include "vector_3.h"
 
-ProjectedPoint projectPoint(Point3D vertex)
+ProjectedPoint projectPoint(Vec3 vertex)
 {
     return {
         (int)(vertex.x / vertex.z * SCALE) + HALF_WIDTH,
@@ -66,7 +67,7 @@ void fillTriangle(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_t
     }
 }
 
-void fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_two, ProjectedPoint v_three, Point3D light, Color color)
+void fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_two, ProjectedPoint v_three, Vec3 light, Color color)
 {
     orderVertices(v_one, v_two, v_three);
 
@@ -98,13 +99,15 @@ void fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoin
             if (z > zBuffer[y * WIDTH + j]) continue;
             zBuffer[y * WIDTH + j] = z;
 
-            Point3D normal = normalize({
+            Vec3 normal = {
                 interpolate(nxL, nxR, j, left, right),
                 interpolate(nyL, nyR, j, left, right),
                 interpolate(nzL, nzR, j, left, right)
-            });
+            };
 
-            float dot = dotProduct(normal, light);
+            normal.Normalize();
+
+            float dot = Vec3::DotProduct(normal, light);
             putPixel(surface, j, y, addBrightness(surface, color.r, color.g, color.b, std::max(0.05f, dot)));
         }
     };

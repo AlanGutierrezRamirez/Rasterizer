@@ -1,7 +1,7 @@
 #include "lights.h"
-#include "engine_math.h"
+#include "vector_3.h"
 
-Point3D light = {-1, 0, -1.75f};
+Vec3 light = {-1, 0, -1.75f};
 
 Uint32 addBrightness(SDL_Surface* surface, int r, int g, int b, float brightness)
 {
