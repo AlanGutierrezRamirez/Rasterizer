@@ -32,4 +32,4 @@ struct SphereInstance {
 
 void InitSphere(Sphere& sphere, float r);
 
-void renderSphere(SDL_Surface* surface, SphereInstance &sphere, Vec3 cameraDir);
+void renderSphere(SDL_Surface* surface, SphereInstance &sphere, Vec3 cameraPos, Vec3 cameraTarget);

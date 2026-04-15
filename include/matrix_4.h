@@ -44,6 +44,8 @@ class Mat4 {
                       float scale_x, float scale_y, float scale_Z,
                       float rotateX, float rotateY, float rotateZ);
 
+  static Mat4 LookAt(Vec3 position, Vec3 target, Vec3 up);
+
   Vec4 Transform(const Vec4& v);
 
   //Author: Alan Gutierrez Ramirez
@@ -297,14 +299,35 @@ inline Mat4 Mat4::GetTransform(float trans_x, float trans_y, float trans_z,
 	float scale_x, float scale_y, float scale_z,
 	float rotateX, float rotateY, float rotateZ)  {
 
-
-
 	return
   Translate(trans_x, trans_y, trans_z)
   .Multiply(RotateX(rotateX))
   .Multiply(RotateY(rotateY))
   .Multiply(RotateZ(rotateZ))
   .Multiply(Scale(scale_x, scale_y, scale_z));
+}
+
+
+inline Mat4 Mat4::LookAt(Vec3 position, Vec3 target, Vec3 up) {
+  up.Normalize();
+ 
+  Vec3 forward = target - position;
+  forward.Normalize();
+
+  Vec3 right = Vec3::CrossProduct(forward, Vec3::up);
+  Vec3 realUp = Vec3::CrossProduct(right, forward);
+
+  float f[16] = 
+  {
+    right.x,   right.y,    right.z,    0.0f,
+    realUp.x,  realUp.y,   realUp.z,   0.0f,
+    forward.x, forward.y,  forward.z,  0.0f,
+    0.0f,         0.0f,          0.0f,          1.0f
+};
+
+  Mat4 lookAt(f);
+
+  return lookAt.Multiply(Mat4::Translate(-position.x, -position.y, -position.z));
 }
 
 inline Vec4 Mat4::GetColum(int colum) const {
@@ -335,8 +358,6 @@ inline Mat4 Mat4::OrthoMatrix(float right, float left, float top, float valueott
   far = 0;
 	return Mat4();
 }
-
-
 
 inline Mat4 Mat4::operator+(const Mat4& other) const {
   Mat4 res;

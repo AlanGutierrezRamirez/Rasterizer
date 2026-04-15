@@ -47,7 +47,8 @@ int main()
 
     light.Normalize();
 
-    Vec3 camera = {0, 0, -1};
+    Vec3 cameraPos = {0, 0, 0};
+    Vec3 cameraTarget = {0, 0, 1};
 
     float   deltaTime    = 0;
     Uint64  currentTime  = 0;
@@ -77,8 +78,8 @@ int main()
         SDL_FillSurfaceRect(surface, nullptr, SDL_MapSurfaceRGB(surface, 15, 15, 35));
         resetZBuffer();
 
-        renderSphere(surface, sphereInsOne, camera);
-        renderSphere(surface, sphereInsTwo, camera);
+        renderSphere(surface, sphereInsOne, cameraPos, cameraTarget);
+        renderSphere(surface, sphereInsTwo, cameraPos, cameraTarget);
 
         SDL_UpdateWindowSurface(window);
     }

@@ -36,13 +36,19 @@ void InitSphere(Sphere& sphere, float r)
     }
 }
 
-void renderSphere(SDL_Surface* surface, SphereInstance& sphere, Vec3 cameraDir)
+void renderSphere(SDL_Surface* surface, SphereInstance& sphere, Vec3 cameraPos, Vec3 cameraTarget)
 {
     float offsetZ = 10.0f;
 
     Mat4 translate = Mat4::Translate(Vec3(0, 0, 15));
     Mat4 transform = translate.Multiply(Mat4::RotateY(sphere.accum));
     transform = transform.Multiply(Mat4::Translate(sphere.orbitRadius, 0, offsetZ));
+
+    Mat4 lookAt = Mat4::LookAt(cameraPos, cameraTarget, Vec3::up);
+
+    Vec4 lightView = lookAt.Transform(Vec4(light, 0.0f));
+    Vec3 lightDir = Vec3(lightView.x, lightView.y, lightView.z).Normalized();
+    transform = transform.Multiply(lookAt);
 
     for (Triangle& triangle : sphere.sphere.triangles)
     {
@@ -86,7 +92,9 @@ void renderSphere(SDL_Surface* surface, SphereInstance& sphere, Vec3 cameraDir)
         two.normal   = nb;
         three.normal = nc;
 
-        fillTrianglePhong(surface, one, two, three, light, sphere.color);
+
+
+        fillTrianglePhong(surface, one, two, three, lightDir, sphere.color);
     }
     sphere.accum += sphere.angle;
 }
