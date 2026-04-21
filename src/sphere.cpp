@@ -3,6 +3,7 @@
 #include "vector_3.h"
 #include "vector_4.h"
 #include "matrix_4.h"
+#include "light.h"
 
 void InitSphere(Sphere& sphere, float r)
 {
@@ -36,33 +37,37 @@ void InitSphere(Sphere& sphere, float r)
     }
 }
 
-void renderSphere(SDL_Surface* surface, SphereInstance& sphere, Vec3 cameraPos, Vec3 cameraTarget)
+void renderSphere(SDL_Surface* surface, SphereInstance& sphere, Vec3 cameraPos, Vec3 cameraTarget, SpotLight light)
 {
-    float offsetZ = 10.0f;
 
-    Mat4 translate = Mat4::Translate(Vec3(0, 0, 15));
-    Mat4 transform = translate.Multiply(Mat4::RotateY(sphere.accum));
-    transform = transform.Multiply(Mat4::Translate(sphere.orbitRadius, 0, offsetZ));
+    Mat4 model = Mat4::Translate(sphere.pos);
 
     Mat4 lookAt = Mat4::LookAt(cameraPos, cameraTarget, Vec3::up);
-
-    Vec4 lightView = lookAt.Transform(Vec4(light, 0.0f));
-    Vec3 lightDir = Vec3(lightView.x, lightView.y, lightView.z).Normalized();
-    transform = transform.Multiply(lookAt);
-
+    
+    Mat4 mv = Mat4().Identity();
+    mv = mv.Multiply(lookAt);
+    mv = mv.Multiply(model);
+    
     for (Triangle& triangle : sphere.sphere.triangles)
     {
         Vec3 a = sphere.sphere.vertices[triangle.a];
         Vec3 b = sphere.sphere.vertices[triangle.b];
         Vec3 c = sphere.sphere.vertices[triangle.c];
 
+        Vec4 awVec = model.Transform(Vec4(a, 1.0f));
+        Vec4 bwVec = model.Transform(Vec4(b, 1.0f));
+        Vec4 cwVec = model.Transform(Vec4(c, 1.0f));
+        Vec3 aWorld = { awVec.x, awVec.y, awVec.z };
+        Vec3 bWorld = { bwVec.x, bwVec.y, bwVec.z };
+        Vec3 cWorld = { cwVec.x, cwVec.y, cwVec.z };
+
         Vec3 na = a.Normalized();
         Vec3 nb = b.Normalized();
         Vec3 nc = c.Normalized();
 
-        Vec4 av = transform.Transform(Vec4(a, 1.0f));
-        Vec4 bv = transform.Transform(Vec4(b, 1.0f));  
-        Vec4 cv = transform.Transform(Vec4(c, 1.0f));
+        Vec4 av = mv.Transform(Vec4(a, 1.0f));
+        Vec4 bv = mv.Transform(Vec4(b, 1.0f));  
+        Vec4 cv = mv.Transform(Vec4(c, 1.0f));
 
         a.x = av.x; b.x = bv.x; c.x = cv.x;
         a.y = av.y; b.y = bv.y; c.y = cv.y;
@@ -84,17 +89,20 @@ void renderSphere(SDL_Surface* surface, SphereInstance& sphere, Vec3 cameraPos, 
 
         if (a.z < 0.5f || b.z < 0.5f || c.z < 0.5f) continue;
 
-        ProjectedPoint one   = projectPoint(a);
-        ProjectedPoint two   = projectPoint(b);
-        ProjectedPoint three = projectPoint(c);
+        ProjectedPoint one   = Draw::projectPoint(a);
+        ProjectedPoint two   = Draw::projectPoint(b);
+        ProjectedPoint three = Draw::projectPoint(c);
 
         one.normal   = na;
         two.normal   = nb;
         three.normal = nc;
 
+        one.worldPos   = aWorld;
+        two.worldPos   = bWorld;
+        three.worldPos = cWorld;
 
-
-        fillTrianglePhong(surface, one, two, three, lightDir, sphere.color);
+        Draw::fillTrianglePhong(surface, one, two, three, light, sphere.color);
     }
+
     sphere.accum += sphere.angle;
 }

@@ -2,8 +2,9 @@
 
 #include <SDL3/SDL.h>
 #include "draw.h"
-#include "lights.h"
+#include "light.h"
 #include "vector_3.h"
+#include "light.h"
 
 struct Triangle
 {
@@ -24,6 +25,7 @@ struct Sphere
 
 struct SphereInstance {
     Sphere sphere;
+    Vec3 pos;
     float angle;
     float accum;
     float orbitRadius;
@@ -32,4 +34,4 @@ struct SphereInstance {
 
 void InitSphere(Sphere& sphere, float r);
 
-void renderSphere(SDL_Surface* surface, SphereInstance &sphere, Vec3 cameraPos, Vec3 cameraTarget);
+void renderSphere(SDL_Surface* surface, SphereInstance &sphere, Vec3 cameraPos, Vec3 cameraTarget, SpotLight light);

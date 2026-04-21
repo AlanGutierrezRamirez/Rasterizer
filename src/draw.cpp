@@ -3,8 +3,9 @@
 #include <algorithm>
 #include <cmath>
 #include "vector_3.h"
+#include "light.h"
 
-ProjectedPoint projectPoint(Vec3 vertex)
+ProjectedPoint Draw::projectPoint(Vec3 vertex)
 {
     return {
         (int)(vertex.x / vertex.z * SCALE) + HALF_WIDTH,
@@ -13,14 +14,14 @@ ProjectedPoint projectPoint(Vec3 vertex)
     };
 }
 
-void putPixel(SDL_Surface* surface, int x, int y, Uint32 color)
+void Draw::putPixel(SDL_Surface* surface, int x, int y, Uint32 color)
 {
     if (x < 0 || x >= surface->w || y < 0 || y >= surface->h) return;
     Uint32* pixels = (Uint32*)surface->pixels;
     pixels[x + surface->w * y] = color;
 }
 
-void drawLine(SDL_Surface* surface, int x0, int y0, int x1, int y1, Uint32 color)
+void Draw::drawLine(SDL_Surface* surface, int x0, int y0, int x1, int y1, Uint32 color)
 {
     int dx = abs(x1 - x0);
     int dy = abs(y1 - y0);
@@ -55,7 +56,7 @@ static float interpolate(float start, float end, int y, int y_start, int y_end)
     return start + (float)(y - y_start) * (end - start) / (float)(y_end - y_start);
 }
 
-void fillTriangle(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_two, ProjectedPoint v_three, Uint32 color)
+void Draw::fillTriangle(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_two, ProjectedPoint v_three, Uint32 color)
 {
     orderVertices(v_one, v_two, v_three);
 
@@ -67,7 +68,7 @@ void fillTriangle(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_t
     }
 }
 
-void fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_two, ProjectedPoint v_three, Vec3 light, Color color)
+void Draw::fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_two, ProjectedPoint v_three, SpotLight light, Color color)
 {
     orderVertices(v_one, v_two, v_three);
 
@@ -81,6 +82,12 @@ void fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoin
         float nxR = interpolate(C.normal.x, D.normal.x, y, C.y, D.y);
         float nyR = interpolate(C.normal.y, D.normal.y, y, C.y, D.y);
         float nzR = interpolate(C.normal.z, D.normal.z, y, C.y, D.y);
+        float wxL = interpolate(A.worldPos.x, B.worldPos.x, y, A.y, B.y);
+        float wyL = interpolate(A.worldPos.y, B.worldPos.y, y, A.y, B.y);
+        float wzL = interpolate(A.worldPos.z, B.worldPos.z, y, A.y, B.y);
+        float wxR = interpolate(C.worldPos.x, D.worldPos.x, y, C.y, D.y);
+        float wyR = interpolate(C.worldPos.y, D.worldPos.y, y, C.y, D.y);
+        float wzR = interpolate(C.worldPos.z, D.worldPos.z, y, C.y, D.y);
         float zL  = interpolate(A.z, B.z, y, A.y, B.y);
         float zR  = interpolate(C.z, D.z, y, C.y, D.y);
 
@@ -99,6 +106,12 @@ void fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoin
             if (z > zBuffer[y * WIDTH + j]) continue;
             zBuffer[y * WIDTH + j] = z;
 
+            Vec3 worldPos = {
+                interpolate(wxL, wxR, j, left, right),
+                interpolate(wyL, wyR, j, left, right),
+                interpolate(wzL, wzR, j, left, right)
+            };
+
             Vec3 normal = {
                 interpolate(nxL, nxR, j, left, right),
                 interpolate(nyL, nyR, j, left, right),
@@ -107,9 +120,11 @@ void fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoin
 
             normal.Normalize();
 
-            float dot = Vec3::DotProduct(normal, light);
-            putPixel(surface, j, y, addBrightness(surface, color.r, color.g, color.b, std::max(0.05f, dot)));
-        }
+            float spotAtt = light.spotLight(worldPos, normal);
+
+            float finalBrightness = spotAtt + 0.05f;  // 0.05f = ambient
+            putPixel(surface, j, y, light.addBrightness(surface, color.r, color.g, color.b,
+                                                std::min(1.0f, finalBrightness)));}
     };
 
     for (int i = v_one.y; i < v_two.y; i++)
