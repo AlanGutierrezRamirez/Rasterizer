@@ -318,12 +318,13 @@ inline Mat4 Mat4::LookAt(Vec3 position, Vec3 target, Vec3 up) {
   right.Normalize();
 
   Vec3 realUp = Vec3::CrossProduct(forward, right);
+  realUp.Normalize();
 
   float f[16] = {
       right.x,   realUp.x,  forward.x,  0.0f,
       right.y,   realUp.y,  forward.y,  0.0f,
       right.z,   realUp.z,  forward.z,  0.0f,
-      -Vec3::DotProduct(right, position), -Vec3::DotProduct(up, position), -Vec3::DotProduct(forward, position), 1.0f
+      -Vec3::DotProduct(right, position), -Vec3::DotProduct(realUp, position), -Vec3::DotProduct(forward, position), 1.0f
   };
 
   Mat4 lookAt(f);

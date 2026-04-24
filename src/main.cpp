@@ -131,7 +131,6 @@ int main()
     sphereInsOne.pos = {0.0f, 0.0f, 10.0f};
     sphereInsTwo.pos = { 5.0f, 0.0f, 10.0f};
 
-
     float cos_in  = cosf(SpotLight::radians(30));
     float cos_out = cosf(SpotLight::radians(40));
 
@@ -140,9 +139,9 @@ int main()
     Vec3 spotLightDir = sphereInsOne.pos - spotLightPos;
     spotLightDir.Normalize();
 
-    SpotLight spotLight(spotLightPos, cos_in, spotLightDir, cos_out, 100, 10, {225, 120, 120});
+    SpotLight spotLight(spotLightPos, cos_in, spotLightDir, cos_out, 100, 1, {225, 120, 120});
 
-    Camera camera({0, 0, 0 }, {0, 0, 1}, 3.0f);
+    Camera camera({0, 0, 0}, 0.0f, 0.0f, 3.0f);
 
     Mesh cathedral;
     cathedral.loadOBJ("/Users/alangutierrezramirez/Documents/Rasterizer/assets/obj/sibenik/sibenik.obj");
@@ -159,7 +158,16 @@ int main()
     {
         ScopedTimer frameTimer("frame_total"); 
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) running = false;
+            if (event.type == SDL_EVENT_QUIT) {
+                running = false;
+            }
+            if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE) {
+                running = false;
+            }
+
+            if (event.type == SDL_EVENT_MOUSE_MOTION) {
+                camera.ProcessMouse(event.motion.xrel, event.motion.yrel);
+            }
         }
 
         currentTime = SDL_GetPerformanceCounter();
@@ -172,7 +180,8 @@ int main()
             SDL_SetWindowTitle(window, ("Rasterizer: " + std::to_string(fps) + " FPS").c_str());
             accumulator = 0;
         }
-
+        surface = SDL_GetWindowSurface(window);  
+        SDL_SetWindowRelativeMouseMode(window, true);
         SDL_FillSurfaceRect(surface, nullptr, SDL_MapSurfaceRGB(surface, 15, 15, 35));
         resetZBuffer();
 
@@ -184,10 +193,8 @@ int main()
 
         SDL_UpdateWindowSurface(window);
 
-
         Profiler::get().frameEnd(); 
     }
-
 
 
     SDL_DestroyWindow(window);

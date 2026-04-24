@@ -124,7 +124,7 @@ void Draw::fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, Project
             float spotAtt = light.spotLight(worldPos, normal);
 
             float finalBrightness = spotAtt + 0.05f;
-            putPixel(surface, j, y, light.addBrightness(surface, color.r, color.g, color.b,
+            putPixel(surface, j, y, addBrightness(surface, color.r, color.g, color.b,
                                                 std::min(1.0f, finalBrightness)));
         }
     };
@@ -169,7 +169,7 @@ void Draw::fillTriangleGouraud(SDL_Surface* surface, ProjectedPoint v_one, Proje
         }
 
         int left = (int)xL, right = (int)xR;
-
+        if (right <= left) return; 
             Vec3 worldPosLeft {
                 wxL, wyL, wzL
             };
@@ -190,25 +190,41 @@ void Draw::fillTriangleGouraud(SDL_Surface* surface, ProjectedPoint v_one, Proje
         float brightL = light.spotLight(worldPosLeft, normalLeft);
         float brightR = light.spotLight(worldPosRight, normalRight);
 
-        for (int j = left; j < right; j++)
+        int jStart = std::max(left, 0);
+        int jEnd   = std::min(right, WIDTH);
+
+        float brightnessD = (brightR - brightL) / (right - left);
+        float brightness = brightL;
+
+        float dz = (zR - zL) / (right - left);  
+
+        float skipped = (float)(jStart - left);
+        float z = zL + dz * skipped;
+        brightness = brightL + brightnessD * skipped;
+
+        for (int j = jStart; j < jEnd; j++)
         {
-            if (j < 0 || j >= WIDTH || y < 0 || y >= HEIGHT) continue;
-
-            float z = interpolate(zL, zR, j, left, right);
-            if (z > zBuffer[y * WIDTH + j]) continue;
-            zBuffer[y * WIDTH + j] = z;
-
-            float brightness = interpolate(brightL, brightR, j, left, right);
-             putPixel(surface, j, y, light.addBrightness(surface, color.r, color.g, color.b,
-                                                 std::min(1.0f, brightness + 0.05f)));
-
+            if (z < zBuffer[y * WIDTH + j]) {
+                zBuffer[y * WIDTH + j] = z;
+                putPixel(surface, j, y, addBrightness(surface, color.r, color.g, color.b,
+                                                 std::min(1.0f, brightness + 0.2f)));
+            }
+            z += dz;
+            brightness += brightnessD;
         }
     };
 
     for (int i = v_one.y; i < v_two.y; i++)
+    {
+        if (i < 0 || i >= HEIGHT) continue;
         scanSpan(i, v_one, v_two, v_one, v_three);
+    }
+      
 
     for (int i = v_two.y; i < v_three.y; i++)
+    {
+        if (i < 0 || i >= HEIGHT) continue;
         scanSpan(i, v_one, v_three, v_two, v_three);
+    }
 
 }

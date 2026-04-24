@@ -2,6 +2,8 @@
 #include "vector_3.h"
 #include <SDL3/SDL.h>
 
+Uint32 addBrightness(SDL_Surface* surface, int r, int g, int b, float brightness);
+
 struct Color
 {
     int r, g, b;
@@ -20,9 +22,6 @@ class SpotLight
 
         float distAttenuation(Vec3 pixel);
         float angularAttenuation(Vec3 pixel);
-        float Lamber(Vec3 pixel, Vec3 normal);
-
-        Uint32 addBrightness(SDL_Surface* surface, int r, int g, int b, float brightness);
 
         float rayMarch(Vec3 rayOrigin, Vec3 rayDir, Vec3 lightPos, Vec3 lightDir, float tMax);
 

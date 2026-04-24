@@ -4,6 +4,7 @@
 #include <SDL3/SDL.h>
 
 #include "vector_3.h"
+#include "matrix_4.h"
 #include "camera.h"
 #include "light.h"
 #include "draw.h"
@@ -37,6 +38,7 @@ class Mesh
         void render(SDL_Surface* surface, Camera cam, SpotLight light, Color color);
     
     private:
+
         std::vector<Vec3> tempPos;
         std::vector<Vec3> tempNorms;
         std::vector<Vec3> tempUVs;

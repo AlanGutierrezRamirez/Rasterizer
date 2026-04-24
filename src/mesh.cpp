@@ -192,7 +192,8 @@ void Mesh::render(SDL_Surface* surface, Camera cam, SpotLight light, Color color
         for(size_t i=0; i<mesh.size(); i++)
         {
             TransformedTriangle& curTriangle =  workBuffer[i];
-            Draw::fillTriangleGouraud(surface, curTriangle.pa, curTriangle.pb, curTriangle.pc, light, color);
+            if(curTriangle.culled) continue;
+                Draw::fillTriangleGouraud(surface, curTriangle.pa, curTriangle.pb, curTriangle.pc, light, color);
 
         }
         

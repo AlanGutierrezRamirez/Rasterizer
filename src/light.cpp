@@ -6,6 +6,15 @@
 #define SIGMA_S 0.2f
 #define SIGMA_T 0.1f
 
+float Lambert(Vec3 pixel, Vec3 normal, Vec3 pos)
+{
+    Vec3 D = (pixel - pos).Normalized();
+    Vec3 L(-D.x, -D.y, -D.z); 
+    float lambert = std::max(0.0f, Vec3::DotProduct(normal, L));
+
+    return lambert;
+}
+
 float SpotLight::radians(float angle)
 {
     float out = angle * M_PI / 180;
@@ -14,7 +23,7 @@ float SpotLight::radians(float angle)
 
 float SpotLight::spotLight(Vec3 pixel, Vec3 normal)
 {
-    return intensity * distAttenuation(pixel) * angularAttenuation(pixel) * Lamber(pixel, normal);
+    return intensity * distAttenuation(pixel) * angularAttenuation(pixel) * Lambert(pixel, normal, pos);
 }
 
 float SpotLight::distAttenuation(Vec3 pixel)
@@ -42,21 +51,11 @@ float SpotLight::angularAttenuation(Vec3 pixel)
     return (cos_theta - cos_outer) / (cos_inner - cos_outer);
 }
 
-float SpotLight::Lamber(Vec3 pixel, Vec3 normal)
-{
-    Vec3 D = (pixel - pos).Normalized();
-    Vec3 L(-D.x, -D.y, -D.z); 
-    float lambert = std::max(0.0f, Vec3::DotProduct(normal, L));
-
-    return lambert;
-}
-
-Uint32 SpotLight::addBrightness(SDL_Surface* surface, int r, int g, int b, float brightness)
+Uint32 addBrightness(SDL_Surface* surface, int r, int g, int b, float brightness)
 {
     return SDL_MapSurfaceRGB(surface, r * brightness, g * brightness, b * brightness);
 }
 
-// light.cpp
 float SpotLight::rayMarch(Vec3 rayOrigin, Vec3 rayDir,
                           Vec3 lightPos, Vec3 lightDir,
                           float tMax)
