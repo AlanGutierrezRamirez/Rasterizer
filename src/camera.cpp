@@ -35,6 +35,7 @@ void Camera::ProcessInput(float deltaTime)
     }
 
 }
+
 Mat4 Camera::GetViewMatrix()
 {
      return Mat4::LookAt(pos, target, Vec3::up);

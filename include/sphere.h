@@ -6,7 +6,7 @@
 #include "vector_3.h"
 #include "light.h"
 
-struct Triangle
+struct Face
 {
     int a, b, c;
 };
@@ -19,7 +19,7 @@ struct Sphere
     static constexpr int total_faces  = latitud * longitud;
 
     Vec3  vertices[total_points];
-    Triangle triangles[total_faces * 2];
+    Face triangles[total_faces * 2];
 
 };
 

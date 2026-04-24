@@ -24,7 +24,7 @@ class SpotLight
 
         Uint32 addBrightness(SDL_Surface* surface, int r, int g, int b, float brightness);
 
-        float rayMarch(Vec3 cameraPos, Vec3 pixel, float coneAngle);
+        float rayMarch(Vec3 rayOrigin, Vec3 rayDir, Vec3 lightPos, Vec3 lightDir, float tMax);
 
         Vec3 pos;
         float cos_inner;

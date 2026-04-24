@@ -10,16 +10,86 @@
 #include "sphere.h"
 #include "camera.h"
 #include "light.h"
+#include "mesh.h"
+#include "profiler.h"
 
-Vec3 pixelToWorld(int x, int y)
+Vec3 pixelToRayDir(int x, int y)
 {
-    return Vec3(
+    Vec3 dir(
         (x - HALF_WIDTH) / (float)SCALE,
-        (y - HALF_HEIGHT) / (float)SCALE,
-        1
+        -(y - HALF_HEIGHT) / (float)SCALE,
+        1.0f
     );
+    return dir.Normalized();
 }
 
+void createRayMarch(SDL_Surface *surface, Camera camera,  SpotLight spotLight)
+{
+        Mat4 view = camera.GetViewMatrix();
+
+        Vec4 lightPosCam4 = view.Transform(Vec4(spotLight.pos, 1.0f));
+        Vec3 lightPosCam(lightPosCam4.x, lightPosCam4.y, lightPosCam4.z);
+
+        Vec4 lightDirCam4 = view.Transform(Vec4(spotLight.dir.Normalized(), 0.0f));
+        Vec3 lightDirCam(lightDirCam4.x, lightDirCam4.y, lightDirCam4.z);
+        lightDirCam.Normalize(); 
+
+        const SDL_PixelFormatDetails* fmt = SDL_GetPixelFormatDetails(surface->format);
+        Uint32* pixels = (Uint32*)surface->pixels;
+        {
+            int cx = WIDTH/2, cy = HEIGHT/2;
+            Vec3 rayDir = pixelToRayDir(cx, cy);
+            float zDepth   = zBuffer[cy * WIDTH + cx];
+            float tMaxGeom = zDepth / rayDir.z;
+            float tMax     = std::min(30.0f, tMaxGeom);
+
+            std::cout << "rayDir = (" << rayDir.x << ", " << rayDir.y << ", " << rayDir.z << ")"
+                    << "  |rayDir| = " << rayDir.Magnitude()
+                    << "  zDepth = " << zDepth
+                    << "  tMaxGeom = " << tMaxGeom
+                    << "  tMax usado = " << tMax << std::endl;
+        }
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                Vec3 rayDir = pixelToRayDir(x, y);
+
+                float zDepth = zBuffer[y * WIDTH + x];
+
+                float tMaxGeom = zDepth / rayDir.z;
+
+                float tMax = std::min(30.0f, tMaxGeom);
+
+                float fogAmount = spotLight.rayMarch(
+                        Vec3::zero,
+                        rayDir,
+                        lightPosCam,
+                        lightDirCam,
+                        tMax
+                    );
+    
+                    float lr = spotLight.color.r / 255.0f;
+                    float lg = spotLight.color.g / 255.0f;
+                    float lb = spotLight.color.b / 255.0f;
+
+                    float fogStrength = 0.1f;
+                    float fogR = fogAmount * fogStrength * lr * 255.0f;
+                    float fogG = fogAmount * fogStrength * lg * 255.0f;
+                    float fogB = fogAmount * fogStrength * lb * 255.0f;
+
+                    Uint8 rOld, gOld, bOld;
+                    SDL_GetRGB(pixels[y * WIDTH + x], 
+                            SDL_GetPixelFormatDetails(surface->format), 
+                            nullptr, &rOld, &gOld, &bOld);
+
+                    int rNew = std::min(255, (int)(rOld + fogR));
+                    int gNew = std::min(255, (int)(gOld + fogG));
+                    int bNew = std::min(255, (int)(bOld + fogB));
+
+                    pixels[y * WIDTH + x] = SDL_MapSurfaceRGB(surface, rNew, gNew, bNew);
+                
+            }
+        }
+}
 
 
 int main()
@@ -62,16 +132,20 @@ int main()
     sphereInsTwo.pos = { 5.0f, 0.0f, 10.0f};
 
 
-    float cos_in  = cosf(SpotLight::radians(15));
-    float cos_out = cosf(SpotLight::radians(20));
+    float cos_in  = cosf(SpotLight::radians(30));
+    float cos_out = cosf(SpotLight::radians(40));
 
     Vec3 spotLightPos = {-20, -15, 0};
 
     Vec3 spotLightDir = sphereInsOne.pos - spotLightPos;
+    spotLightDir.Normalize();
 
-    SpotLight spotLight(spotLightPos, cos_in, spotLightDir, cos_out, 40, 10, {225, 120, 120});
+    SpotLight spotLight(spotLightPos, cos_in, spotLightDir, cos_out, 100, 10, {225, 120, 120});
 
     Camera camera({0, 0, 0 }, {0, 0, 1}, 3.0f);
+
+    Mesh cathedral;
+    cathedral.loadOBJ("/Users/alangutierrezramirez/Documents/Rasterizer/assets/obj/sibenik/sibenik.obj");
 
     float   deltaTime    = 0;
     Uint64  currentTime  = 0;
@@ -83,6 +157,7 @@ int main()
     bool running = true;
     while (running)
     {
+        ScopedTimer frameTimer("frame_total"); 
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) running = false;
         }
@@ -102,44 +177,19 @@ int main()
         resetZBuffer();
 
         camera.ProcessInput(deltaTime);
-        renderSphere(surface, sphereInsOne, camera.GetCameraPos(), camera.GetCameraTarget(), spotLight);
-        renderSphere(surface, sphereInsTwo, camera.GetCameraPos(), camera.GetCameraTarget(), spotLight);
 
-        const SDL_PixelFormatDetails* fmt = SDL_GetPixelFormatDetails(surface->format);
-        Uint32* pixels = (Uint32*)surface->pixels;
+        cathedral.render(surface, camera, spotLight, red_color);
 
-        for (int y = 0; y < HEIGHT; y++) {
-            for (int x = 0; x < WIDTH; x++) {
-                Vec3 dir = pixelToWorld(x, y);
-                float fogAmount = spotLight.rayMarch(camera.GetCameraPos(), dir, 30);
-   
-                float lr = spotLight.color.r / 255.0f;   // 0.88
-                float lg = spotLight.color.g / 255.0f;   // 0.47
-                float lb = spotLight.color.b / 255.0f;   // 0.47
-
-                float fogStrength = 0.1f;  // ajustar a mano
-                float fogR = fogAmount * fogStrength * lr * 255.0f;
-                float fogG = fogAmount * fogStrength * lg * 255.0f;
-                float fogB = fogAmount * fogStrength * lb * 255.0f;
-
-                Uint8 rOld, gOld, bOld;
-                SDL_GetRGB(pixels[y * WIDTH + x], 
-                        SDL_GetPixelFormatDetails(surface->format), 
-                        nullptr, &rOld, &gOld, &bOld);
-
-                int rNew = std::min(255, (int)(rOld + fogR));
-                int gNew = std::min(255, (int)(gOld + fogG));
-                int bNew = std::min(255, (int)(bOld + fogB));
-
-                pixels[y * WIDTH + x] = SDL_MapSurfaceRGB(surface, rNew, gNew, bNew);
-                
-                
-            }
-        }
+        //createRayMarch(surface, camera, spotLight);
 
         SDL_UpdateWindowSurface(window);
 
+
+        Profiler::get().frameEnd(); 
     }
+
+
+
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;

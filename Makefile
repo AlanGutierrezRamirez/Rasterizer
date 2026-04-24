@@ -9,7 +9,7 @@ FRAMEWORKS     = -framework SDL3
 RPATH          = -Wl,-rpath,@executable_path/dependencies/SDL3.xcframework/macos-arm64_x86_64
 
 HEADERS = include
-SRC = src/main.cpp src/draw.cpp src/zbuffer.cpp src/light.cpp src/sphere.cpp src/camera.cpp \
+SRC = src/main.cpp src/draw.cpp src/zbuffer.cpp src/light.cpp src/sphere.cpp src/camera.cpp src/mesh.cpp src/profiler.cpp\
       src/vector_2.cc src/vector_3.cc src/vector_4.cc \
       src/matrix_2.cc src/matrix_3.cc src/matrix_4.cc \
       src/collisions.cc

@@ -56,32 +56,40 @@ Uint32 SpotLight::addBrightness(SDL_Surface* surface, int r, int g, int b, float
     return SDL_MapSurfaceRGB(surface, r * brightness, g * brightness, b * brightness);
 }
 
-float SpotLight::rayMarch(Vec3 rayOrigin, Vec3 rayDir, float maxDist)
+// light.cpp
+float SpotLight::rayMarch(Vec3 rayOrigin, Vec3 rayDir,
+                          Vec3 lightPos, Vec3 lightDir,
+                          float tMax)
 {
     float fogAmount = 0.0f;
     float t = 0.0f;
 
-    while (t < maxDist) {
+    while (t < tMax) {
         Vec3 samplePos = rayOrigin + rayDir * t;
 
-        Vec3 toSample = (samplePos - pos).Normalized();
-        dir.Normalize();
-        float cosAngle = Vec3::DotProduct(dir, toSample);
+        Vec3 lightToSample = samplePos - lightPos;
+        float distToLight  = lightToSample.Magnitude();
+
+        Vec3 toSample = (distToLight > 1e-5f)
+                      ? lightToSample / distToLight
+                      : Vec3::zero;
+
+        float cosAngle = Vec3::DotProduct(lightDir, toSample);
 
         if (cosAngle >= cos_outer) {
             float edge = (cosAngle >= cos_inner)
                 ? 1.0f
                 : (cosAngle - cos_outer) / (cos_inner - cos_outer);
 
-            float distToLight = Vec3::Distance(samplePos, pos);
             if (distToLight < rmax) {
-                float window = 1.0f - (distToLight * distToLight) / (rmax * rmax);
-                float distAtt = (window * window);
+                float window  = 1.0f - (distToLight * distToLight)
+                                     / (rmax * rmax);
+                float distAtt = window * window;
 
                 float transmittance = expf(-SIGMA_T * t);
 
                 fogAmount += transmittance * SIGMA_S * STEP_SIZE
-                             * edge * distAtt * intensity;
+                           * edge * distAtt * intensity;
             }
         }
 

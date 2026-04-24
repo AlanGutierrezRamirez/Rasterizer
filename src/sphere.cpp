@@ -48,7 +48,7 @@ void renderSphere(SDL_Surface* surface, SphereInstance& sphere, Vec3 cameraPos, 
     mv = mv.Multiply(lookAt);
     mv = mv.Multiply(model);
     
-    for (Triangle& triangle : sphere.sphere.triangles)
+    for (Face& triangle : sphere.sphere.triangles)
     {
         Vec3 a = sphere.sphere.vertices[triangle.a];
         Vec3 b = sphere.sphere.vertices[triangle.b];

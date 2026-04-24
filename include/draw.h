@@ -26,5 +26,6 @@ class Draw
         static void drawLine(SDL_Surface* surface, int x0, int y0, int x1, int y1, Uint32 color);
         static void fillTriangle(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_two, ProjectedPoint v_three, Uint32 color);
         static void fillTrianglePhong(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_two, ProjectedPoint v_three, SpotLight light, Color color);
+        static void fillTriangleGouraud(SDL_Surface* surface, ProjectedPoint v_one, ProjectedPoint v_two, ProjectedPoint v_three, SpotLight light, Color color);
 
 };
